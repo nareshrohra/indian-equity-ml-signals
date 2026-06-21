@@ -124,14 +124,14 @@ class GapPercCalculationWorker(CalculationWorker):
         )
 
 class StopHitDayCalculationWorker(CalculationWorker):
-    def __init__(self, stop_loss_value: float = -2.5):
+    def __init__(self, stop_loss_value: float = 2.5):
         super().__init__(stop_loss_value=float(stop_loss_value))
         self._columns.append('StopHitDay')
 
     @Instrumentation.trace(name='StopHitDayCalculationWorker')
     def add_calculated_columns(self, data: pd.DataFrame):
         low_cols = [f'TroughPercInNext{i}Sessions' for i in range(1, 16)]
-        mask = data[low_cols] <= self._params['stop_loss_value']
+        mask = data[low_cols] >= self._params['stop_loss_value']
         result = mask.idxmax(axis=1).str.extract(r'(\d+)').astype(float).squeeze()
         result[~mask.any(axis=1)] = np.nan
         data[self._columns[0]] = result

@@ -2,22 +2,38 @@
 
 ## Project Overview
 
-This project builds machine learning models to predict whether a stock is bullish or not. The model will be trained on historical market data, technical indicators, and index-level features.
+This project builds machine learning models to predict trading signals for stocks — currently a
+**bullish** classifier, with the model/feature/experiment framework designed so a bearish (or other
+direction) classifier can be added the same way. Models are trained on historical market data,
+technical indicators, and index-level (Nifty 50 / India VIX) features.
 
-Current model family:
+Current model families, registered in `modules/models.py` via `ClassifierModelsRegistry`:
 
-* XGBoost Classifier
+* `xgboost` — XGBClassifier
+* `lgbm` — LGBMClassifier
+* `catboost` — CatBoostClassifier
+* `random_forest` — RandomForestClassifier
+* `logistic_regression` — LogisticRegression (+ StandardScaler)
 
-Current target:
+All use class-imbalance weighting (`scale_pos_weight` / `class_weight`) since bullish setups are
+the minority class.
+
+Current target (computed in `calc_workers.py` / `model_helper.py::create_target`):
 
 ```python
-Target = (PeakPercInNext15Sessions >= 5)
+TargetHitDay = first session in next 15 where PeakPercInNextNSessions >= +5%
+StopHitDay   = first session in next 15 where TroughPercInNextNSessions <= stop-loss threshold
+
+Target = 1 if TargetHitDay is reached, AND
+              (StopHitDay was never reached OR TargetHitDay comes before StopHitDay)
+Target = 0 otherwise
 ```
 
 Meaning:
 
-* Class 1 = Stock gains at least 5% within the next 15 trading sessions.
-* Class 0 = Otherwise.
+* Class 1 = Stock gains at least 5% within the next 15 trading sessions *before* hitting its
+  stop-loss.
+* Class 0 = Otherwise (target never hit, or stop-loss hit first).
 
 The primary objective is to rank stocks by probability of achieving the target.
 
@@ -25,41 +41,68 @@ The primary objective is to rank stocks by probability of achieving the target.
 
 # Repository Structure
 
-## model_helper.py
+## modules/data_helper.py
 
 Responsible for:
 
-* Feature engineering
+* Fetching stock + index (Nifty 50, India VIX) data via `markets_insights`
+* Running calculation pipelines (technical indicators, target/stop-loss, growth)
+* Caching processed data under `cache-data/` (gitignored, can be regenerated)
+* Merging index data onto stock rows with suffix `__{identifier}` (e.g. `Rsi__Nifty 50`)
+
+## modules/calc_workers.py
+
+Custom `CalculationWorker` implementations not provided by `markets_insights`:
+price/gap features, volume/turnover liquidity features, RSI/Stoch-RSI/SMA threshold
+flags, and the `TargetHitDay`/`StopHitDay` workers used to build the target.
+
+## modules/model_helper.py
+
+Responsible for:
+
+* Feature column selection
+* Feature preparation (numeric coercion, inf→NaN, dropna)
 * Target generation
-* Feature selection
+* Training-data filtering (`filter_training_data`, used for experiments like
+  `high_turnover_only`)
 
 Key functions:
 
 ```python
+get_feature_columns(training_data)
 prepare_features(data, feature_cols)
 create_target(data)
-get_features(training_data)
+filter_training_data(data, criteria)
 ```
 
-## xgboost_model.py
+## modules/models.py
 
-Responsible for:
-
-* Model training
-* Model persistence
-* Prediction
-* Evaluation
-* Reporting
+`ClassifierModel` base class + one subclass per model family (`XGBoostModel`,
+`LGBMModel`, `CatBoostModel`, `RandomForestModel`, `LogisticRegressionModel`), registered
+in `ClassifierModelsRegistry` under keys `xgboost`, `lgbm`, `catboost`, `random_forest`,
+`logistic_regression`.
 
 Key methods:
 
 ```python
-train()
-predict()
-evaluate()
-save()
-load()
+train(training_data)
+predict(data)
+evaluate(data)
+get_feature_importance()
+save_to_dir(directory, metadata)
+load_from_dir(directory)          # staticmethod
 ```
+
+## ui/
+
+Jupyter-notebook-backed UIs (each notebook just `chdir`s to `src/` then calls
+`render()` from its matching `_ui.py` module):
+
+* `model_training.ipynb` / `model_training_ui.py` — batch-trains a model × feature-config
+  grid, optionally under a named experiment + training filter(s); saves to `trained_models/`.
+* `trained_model_dashboard.ipynb` / `trained_model_dashboard_ui.py` — compares trained
+  models within an experiment (ROC AUC, classification report, feature importance).
+* `run_predictions.ipynb` / `ui_helper.py` — loads a saved model and scores live data.
 
 ---
 
@@ -101,29 +144,26 @@ PriceAboveSma200
 
 Index features are merged into stock-level data.
 
-Current benchmark:
+Current benchmarks:
 
 ```text
 Nifty 50
+India VIX
 ```
 
-Index columns are suffixed using:
-
-```python
-suffixes=('', '_index')
-```
-
-Example:
+Index columns are suffixed using `__{identifier}` (double underscore), via
+`pd.merge(..., suffixes=('', f'__{identifier}'))`:
 
 ```text
 Rsi
-Rsi_index
+Rsi__Nifty 50
+Rsi__India VIX
 
 Sma50
-Sma50_index
+Sma50__Nifty 50
 ```
 
-Only Nifty 50 rows should be used when creating index features.
+Only rows for the named identifier should be used when creating index features.
 
 Avoid many-to-many joins.
 
@@ -202,6 +242,40 @@ SMA200
 ```
 
 Column names are case-sensitive.
+
+---
+
+# Feature Configs
+
+The authoritative feature lists for training live in `config/feature_configs.json`, not
+`model_helper.get_feature_columns()` (legacy/unused by the current multi-config training
+flow — kept for reference only).
+
+`feature_configs.json` has two sections:
+
+* `features` — named groups of column names (e.g. `eq_momentum`, `nifty_trend`,
+  `vix_bollinger`).
+* `configs` — named presets, each a list of group names, resolved (de-duplicated) into a
+  flat feature-column list by `model_training_ui.py::_load_configs()`.
+
+Current presets, each a superset of `eq_core`:
+
+| Config | Adds on top of `eq_core` |
+|---|---|
+| `eq_core` | momentum, trend, volume, price/gap |
+| `eq_all` | + Bollinger Band features |
+| `eq_nifty` | + Nifty 50 context/momentum/trend |
+| `eq_vix` | + India VIX context/momentum/trend |
+| `eq_market` | + Nifty + VIX context/momentum |
+| `eq_full` | everything |
+
+A trained model's name is `{model_key}_{config_key}`, e.g. `catboost_eq_vix`.
+
+Training-data row filters (separate from feature selection) live in
+`config/filter_configs.json` as `{name: pandas_query_string}`, applied via
+`model_helper.filter_training_data()`. These mark deliberate changes to the training
+universe (e.g. `high_turnover_only` → `` `TurnoverSma20PercentileRank` > 0.75 ``) and are
+typically paired with a same-named experiment folder under `trained_models/`.
 
 ---
 
@@ -296,19 +370,26 @@ For stock-selection use cases, ranking metrics are more important than raw accur
 
 # Model Persistence
 
-Models should be saved after training.
+Models are saved (joblib pickle of the whole `ClassifierModel` instance, plus a
+`metadata.json` with stats/feature importances/eval plots) under
+`trained_models/bullish/classifiers/[<experiment>/]<model>_<config>/` at the project
+root (gitignored — not checked into version control).
 
-Preferred approach:
+Saving:
 
 ```python
-model.save_model(path)
+model.save_to_dir(directory, metadata)
 ```
 
 Loading:
 
 ```python
-model.load_model(path)
+model = ClassifierModel.load_from_dir(directory)
 ```
+
+An **experiment** is just a named subfolder grouping one batch of model×config runs —
+used to mark a deliberate change in training universe (e.g. `high_turnover_only`,
+filtered via `config/filter_configs.json`), features, or target definition.
 
 Model comparisons must always be performed on the same evaluation dataset.
 
