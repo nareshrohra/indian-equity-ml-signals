@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(/.claude/skills/analyze-results/**)",
+      "Bash(../.venv/Scripts/python -m py_compile ui/model_training_ui.py ui/trained_model_dashboard_ui.py ui/ui_helper.py)"
+    ]
+  }
+}

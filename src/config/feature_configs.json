@@ -1,0 +1,93 @@
+{
+  "features": {
+    "eq_momentum": [
+      "Rsi", "RsiCrossedAbove", "RsiCrossedBelow", "RsiBelow30", "RsiAbove75",
+      "StochRsi_K", "StochRsi_D",
+      "StochRsi_KCrossedAbove", "StochRsi_DCrossedAbove",
+      "StochRsi_KCrossedBelow", "StochRsi_DCrossedBelow",
+      "StochRsi_KBelow20", "StochRsi_KAbove80"
+    ],
+
+    "eq_trend": [
+      "CloseAboveSma50", "CloseAboveSma100", "CloseAboveSma200",
+      "PriceCrossedAboveSma50", "PriceCrossedAboveSma100", "PriceCrossedAboveSma200",
+      "PriceCrossedBelowSma50", "PriceCrossedBelowSma100", "PriceCrossedBelowSma200"
+    ],
+
+    "eq_bollinger": [
+      "PriceCrossedBelowBb200Dev2Lower", "PriceCrossedAboveBb200Dev2Upper",
+      "PriceCrossedBelowBb200Dev3Lower", "PriceCrossedAboveBb200Dev3Upper"
+    ],
+
+    "eq_volume": [
+      "VolumeSma20", "RelativeVolume20", "VolumeAbove2xVolumeSma20", "CloseVolumeConfirmation",
+      "TurnoverSma20", "RelativeTurnover20", "TurnoverAbove2xTurnoverSma20"
+    ],
+
+    "eq_price": [
+      "DailyRangePerc", "GapPerc",
+      "CloseChange20Sessions", "CloseChangePerc20Sessions"
+    ],
+
+    "nifty_context": [
+      "Change(%)", "P/E", "P/B", "Div Yield",
+      "DailyRangePerc__Nifty 50", "GapPerc__Nifty 50",
+      "CloseChange20Sessions__Nifty 50", "CloseChangePerc20Sessions__Nifty 50"
+    ],
+
+    "nifty_momentum": [
+      "Rsi__Nifty 50", "RsiBelow30__Nifty 50", "RsiAbove75__Nifty 50",
+      "RsiCrossedAbove__Nifty 50", "RsiCrossedBelow__Nifty 50",
+      "StochRsi_K__Nifty 50", "StochRsi_D__Nifty 50",
+      "StochRsi_KBelow20__Nifty 50", "StochRsi_KAbove80__Nifty 50",
+      "StochRsi_KCrossedAbove__Nifty 50", "StochRsi_DCrossedAbove__Nifty 50",
+      "StochRsi_KCrossedBelow__Nifty 50", "StochRsi_DCrossedBelow__Nifty 50"
+    ],
+
+    "nifty_trend": [
+      "CloseAboveSma50__Nifty 50", "CloseAboveSma100__Nifty 50", "CloseAboveSma200__Nifty 50",
+      "PriceCrossedAboveSma50__Nifty 50", "PriceCrossedAboveSma100__Nifty 50", "PriceCrossedAboveSma200__Nifty 50",
+      "PriceCrossedBelowSma50__Nifty 50", "PriceCrossedBelowSma100__Nifty 50", "PriceCrossedBelowSma200__Nifty 50"
+    ],
+
+    "nifty_bollinger": [
+      "PriceCrossedAboveBb200Dev2Upper__Nifty 50", "PriceCrossedBelowBb200Dev2Lower__Nifty 50",
+      "PriceCrossedAboveBb200Dev3Upper__Nifty 50", "PriceCrossedBelowBb200Dev3Lower__Nifty 50"
+    ],
+
+    "vix_context": [
+      "Change(%)__India VIX",
+      "DailyRangePerc__India VIX", "GapPerc__India VIX",
+      "CloseChange20Sessions__India VIX", "CloseChangePerc20Sessions__India VIX"
+    ],
+
+    "vix_momentum": [
+      "Rsi__India VIX", "RsiBelow30__India VIX", "RsiAbove75__India VIX",
+      "RsiCrossedAbove__India VIX", "RsiCrossedBelow__India VIX",
+      "StochRsi_K__India VIX", "StochRsi_D__India VIX",
+      "StochRsi_KBelow20__India VIX", "StochRsi_KAbove80__India VIX",
+      "StochRsi_KCrossedAbove__India VIX", "StochRsi_DCrossedAbove__India VIX",
+      "StochRsi_KCrossedBelow__India VIX", "StochRsi_DCrossedBelow__India VIX"
+    ],
+
+    "vix_trend": [
+      "CloseAboveSma50__India VIX", "CloseAboveSma100__India VIX", "CloseAboveSma200__India VIX",
+      "PriceCrossedAboveSma50__India VIX", "PriceCrossedAboveSma100__India VIX", "PriceCrossedAboveSma200__India VIX",
+      "PriceCrossedBelowSma50__India VIX", "PriceCrossedBelowSma100__India VIX", "PriceCrossedBelowSma200__India VIX"
+    ],
+
+    "vix_bollinger": [
+      "PriceCrossedAboveBb200Dev2Upper__India VIX", "PriceCrossedBelowBb200Dev2Lower__India VIX",
+      "PriceCrossedAboveBb200Dev3Upper__India VIX", "PriceCrossedBelowBb200Dev3Lower__India VIX"
+    ]
+  },
+
+  "configs": {
+    "eq_core":   ["eq_momentum", "eq_trend", "eq_volume", "eq_price"],
+    "eq_all":    ["eq_momentum", "eq_trend", "eq_bollinger", "eq_volume", "eq_price"],
+    "eq_vix":    ["eq_momentum", "eq_trend", "eq_volume", "eq_price", "vix_context", "vix_momentum", "vix_trend"],
+    "eq_nifty":  ["eq_momentum", "eq_trend", "eq_volume", "eq_price", "nifty_context", "nifty_momentum", "nifty_trend"],
+    "eq_market": ["eq_momentum", "eq_trend", "eq_volume", "eq_price", "nifty_context", "nifty_momentum", "vix_context", "vix_momentum"],
+    "eq_full":   ["eq_momentum", "eq_trend", "eq_bollinger", "eq_volume", "eq_price", "nifty_context", "nifty_momentum", "nifty_trend", "nifty_bollinger", "vix_context", "vix_momentum", "vix_trend", "vix_bollinger"]
+  }
+}

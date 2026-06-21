@@ -1,0 +1,6 @@
+.venv/
+cache-data/
+trained_models/
+__pycache__/
+src/catboost_info/
+.claude/settings.local.json

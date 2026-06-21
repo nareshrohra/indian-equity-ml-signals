@@ -1,0 +1,4 @@
+{
+  "high_turnover_only": "`TurnoverSma20PercentileRank` > 0.75",
+  "mid_high_turnover": "`TurnoverSma20PercentileRank` > 0.5"
+}

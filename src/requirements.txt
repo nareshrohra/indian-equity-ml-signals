@@ -1,0 +1,10 @@
+markets_insights
+pandas
+pandas_ta
+matplotlib
+seaborn
+scikit-learn
+attrs
+xgboost
+lightgbm
+catboost
